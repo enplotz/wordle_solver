@@ -9,13 +9,14 @@ import java.util.Optional;
 import dev.hotz.Guesser;
 import dev.hotz.Util;
 import dev.hotz.Wordle;
+import dev.hotz.Wordle.Word;
 
 /**
  * Parallel version of naîve guesser for 3blue1brown algorithm.
  */
 public class NaiveParallel implements Guesser {
 
-    private final List<Util.Pair<String, Long>> remaining;
+    private final List<Util.Pair<Word, Long>> remaining;
 
     public NaiveParallel() {
         this.remaining = new ArrayList<>(Wordle.DICTIONARY.entrySet()
@@ -25,13 +26,13 @@ public class NaiveParallel implements Guesser {
     }
 
     @Override
-    public Optional<String> guess(final Deque<Guess> history) {
+    public Optional<Word> guess(final Deque<Guess> history) {
         final var corr = Wordle.Correctness.initMask();
         if (!history.isEmpty()) {
             final var last = history.getLast();
             this.remaining.removeIf(e -> !last.matches(e.left(), corr));
         } else {
-            return Optional.of("tares");
+            return Optional.of(new Word("tares"));
         }
         final long remaining_count = this.remaining.stream().mapToLong(Util.Pair::right).sum();
         return this.remaining.parallelStream().map(p -> {
@@ -57,6 +58,6 @@ public class NaiveParallel implements Guesser {
         ).map(Candidate::word);
     }
 
-    private record Candidate(String word, double goodness) {
+    private record Candidate(Word word, double goodness) {
     }
 }

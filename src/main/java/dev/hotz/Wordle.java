@@ -20,10 +20,12 @@ public final class Wordle {
     private static final int MAX_GUESSES = 6;
 
     // TODO better dictionary handling, ideally this could be done in the generate-sources phase?
-    public static final Map<String, Long> DICTIONARY;
+    public static final Map<Word, Long> DICTIONARY;
 
+    // TODO The object overhead is a bit sad, ideally we would like to use something like a type alias for byte[] (value types when...)
+    //      that also handles HashMap comparing like e.g. for Strings (where it works), not like byte[] where Objects.equals(ba1, ba2) -> false...
     static {
-        Map<String, Long> d;
+        Map<Word, Long> d;
         try {
             d = loadDict();
         } catch (IOException e) {
@@ -33,13 +35,13 @@ public final class Wordle {
         DICTIONARY = d;
     }
 
-    private static Map<String, Long> loadDict() throws IOException {
+    private static Map<Word, Long> loadDict() throws IOException {
         try (final var in = new BufferedReader(new InputStreamReader(
                 Objects.requireNonNull(Wordle.class.getClassLoader().getResourceAsStream("dictionary.txt"))))) {
             return in.lines()
                     .filter(l -> !l.startsWith("#"))
                     .map(l -> l.split(" "))
-                    .collect(Collectors.toMap(l -> l[0], l -> Long.valueOf(l[1])));
+                    .collect(Collectors.toMap(l -> new Word(l[0]), l -> Long.valueOf(l[1])));
         }
     }
 
@@ -47,7 +49,7 @@ public final class Wordle {
 
     }
 
-    public OptionalInt play(final String answer, final Guesser guesser) {
+    public OptionalInt play(final Word answer, final Guesser guesser) {
         Objects.requireNonNull(answer);
         Objects.requireNonNull(guesser);
 
@@ -64,6 +66,40 @@ public final class Wordle {
         return OptionalInt.empty();
     }
 
+    public static class Word {
+
+        private final byte[] value;
+
+        public Word(final String word) {
+            this.value = Objects.requireNonNull(word).getBytes();
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof final Word word)) {
+                return false;
+            }
+            return Arrays.equals(value, word.value);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(value);
+        }
+
+        public byte valueAt(final int i) {
+            return this.value[i];
+        }
+
+        @Override
+        public String toString() {
+            return new String(this.value);
+        }
+    }
+
     public enum Correctness {
         CORRECT,
         MISPLACED,
@@ -73,11 +109,11 @@ public final class Wordle {
 
         public static final Correctness[][] ALL_PATTERNS = genPatterns();
 
-        static public Correctness[] compute(final String answer, final String guess) {
+        static public Correctness[] compute(final Word answer, final Word guess) {
             return compute(answer, guess, null);
         }
 
-        static public Correctness[] compute(final String answer, final String guess, Correctness[] correctness) {
+        static public Correctness[] compute(final Word answer, final Word guess, Correctness[] correctness) {
             if (correctness == null) {
                 correctness = new Correctness[LENGTH];
             } else if (correctness.length != LENGTH) {
@@ -88,8 +124,8 @@ public final class Wordle {
             final var misplaced = new int['z' - 'a' + 1];
             // check correct chars
             for (int i = 0; i < correctness.length; i++) {
-                final var a = answer.charAt(i);
-                final var g = guess.charAt(i);
+                final var a = answer.valueAt(i);
+                final var g = guess.valueAt(i);
                 if (a == g) {
                     correctness[i] = CORRECT;
                 } else {
@@ -99,7 +135,7 @@ public final class Wordle {
             }
             // verify misplaced characters
             for (int i = 0; i < correctness.length; i++) {
-                final int g = guess.charAt(i);
+                final int g = guess.valueAt(i);
                 if (WRONG == correctness[i] && misplaced[g - 'a'] > 0) {
                     correctness[i] = MISPLACED;
                     misplaced[g - 'a'] -= 1;

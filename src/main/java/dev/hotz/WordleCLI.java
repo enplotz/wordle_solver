@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+import dev.hotz.Wordle.Word;
 import dev.hotz.alg.MostFreq;
 import dev.hotz.alg.Naive;
 import dev.hotz.alg.NaiveParallel;
@@ -26,10 +27,10 @@ import picocli.CommandLine.Option;
 class WordleCLI implements Callable<Integer> {
 
     // TODO also improve this, generate-sources?
-    private static final List<String> GAMES;
+    private static final List<Word> GAMES;
 
     static {
-        List<String> d;
+        List<Word> d;
         try {
             d = loadGames();
         } catch (IOException e) {
@@ -39,11 +40,12 @@ class WordleCLI implements Callable<Integer> {
         GAMES = d;
     }
 
-    private static List<String> loadGames() throws IOException {
+    private static List<Word> loadGames() throws IOException {
         try (final var in = new BufferedReader(new InputStreamReader(
                 Objects.requireNonNull(Wordle.class.getClassLoader().getResourceAsStream("answers.txt"))))) {
             return in.lines()
                     .filter(l -> !l.startsWith("#"))
+                    .map(Word::new)
                     .collect(Collectors.toList());
         }
     }

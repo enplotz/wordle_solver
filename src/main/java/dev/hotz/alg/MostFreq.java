@@ -9,13 +9,14 @@ import java.util.Optional;
 import dev.hotz.Guesser;
 import dev.hotz.Util;
 import dev.hotz.Wordle;
+import dev.hotz.Wordle.Word;
 
 /**
  * A guesser that chooses as next guess the most-frequent word remaining in the dictionary.
  */
 public class MostFreq implements Guesser {
 
-    private final ArrayList<Util.Pair<String, Long>> remaining;
+    private final ArrayList<Util.Pair<Word, Long>> remaining;
 
     public MostFreq() {
         this.remaining = new ArrayList<>(Wordle.DICTIONARY.entrySet()
@@ -26,7 +27,7 @@ public class MostFreq implements Guesser {
     }
 
     @Override
-    public Optional<String> guess(final Deque<Guess> history) {
+    public Optional<Word> guess(final Deque<Guess> history) {
         if (!history.isEmpty()) {
             final var corr = Wordle.Correctness.initMask();
             final var last = history.getLast();

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import dev.hotz.Wordle.Correctness;
+import dev.hotz.Wordle.Word;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,16 +42,20 @@ public class TestCorrectness {
 
     @Test
     void testCompute() {
-        assertArrayEquals(Correctness.maskOf("CCCCC"), Correctness.compute("abcde", "abcde"));
-        assertArrayEquals(Correctness.maskOf("MMMMM"), Correctness.compute("abcde", "eabcd"));
-        assertArrayEquals(Correctness.maskOf("WWWWW"), Correctness.compute("abcde", "fghij"));
+        assertArrayEquals(Correctness.maskOf("CCCCC"), compute("abcde", "abcde"));
+        assertArrayEquals(Correctness.maskOf("MMMMM"), compute("abcde", "eabcd"));
+        assertArrayEquals(Correctness.maskOf("WWWWW"), compute("abcde", "fghij"));
 
-        assertArrayEquals(Correctness.maskOf("CMCMC"), Correctness.compute("salet", "selat"));
-        assertArrayEquals(Correctness.maskOf("CMCMM"), Correctness.compute("aabbc", "abbca"));
-        assertArrayEquals(Correctness.maskOf("WWWWW"), Correctness.compute("aaabb", "eeeff"));
-        assertArrayEquals(Correctness.maskOf("MMMWW"), Correctness.compute("abccc", "cabef"));
-        assertArrayEquals(Correctness.maskOf("CCCWW"), Correctness.compute("cabef", "cabcc"));
-        assertArrayEquals(Correctness.maskOf("CCWMW"), Correctness.compute("cacef", "cabcc"));
+        assertArrayEquals(Correctness.maskOf("CMCMC"), compute("salet", "selat"));
+        assertArrayEquals(Correctness.maskOf("CMCMM"), compute("aabbc", "abbca"));
+        assertArrayEquals(Correctness.maskOf("WWWWW"), compute("aaabb", "eeeff"));
+        assertArrayEquals(Correctness.maskOf("MMMWW"), compute("abccc", "cabef"));
+        assertArrayEquals(Correctness.maskOf("CCCWW"), compute("cabef", "cabcc"));
+        assertArrayEquals(Correctness.maskOf("CCWMW"), compute("cacef", "cabcc"));
+    }
+
+    private static Correctness[] compute(final String answer, final String guess) {
+        return Correctness.compute(new Word(answer), new Word(guess));
     }
 
     @Test
@@ -69,14 +74,14 @@ public class TestCorrectness {
 
     private void matches(final String guess, final String mask, final String answer) {
         final var m = Correctness.maskOf(mask);
-        assertTrue(new Guesser.Guess(guess, m).matches(answer));
-        assertArrayEquals(m, Correctness.compute(answer, guess));
+        assertTrue(new Guesser.Guess(new Word(guess), m).matches(new Word(answer)));
+        assertArrayEquals(m, compute(answer, guess));
     }
 
     private void noMatch(final String guess, final String mask, final String answer) {
         final var m = Correctness.maskOf(mask);
-        assertFalse(new Guesser.Guess(guess, m).matches(answer));
-        assertFalse(Arrays.equals(m, Correctness.compute(answer, guess)));
+        assertFalse(new Guesser.Guess(new Word(guess), m).matches(new Word(answer)));
+        assertFalse(Arrays.equals(m, compute(answer, guess)));
     }
 
 }
