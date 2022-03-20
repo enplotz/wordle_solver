@@ -18,12 +18,12 @@ import dev.hotz.Wordle.Word;
 /**
  * Naîve guesser for 3blue1brown algorithm.
  */
-public class Naive implements Guesser {
+public class Entropy implements Guesser {
 
     private final List<Util.Pair<Word, Long>> remaining;
     private List<Correctness[]> patterns = null;
 
-    public Naive() {
+    public Entropy() {
         this.remaining = new ArrayList<>(Wordle.DICTIONARY.entrySet()
                 .stream()
                 .map(e -> new Util.Pair<>(e.getKey(), e.getValue()))

@@ -15,7 +15,7 @@ import java.util.stream.LongStream;
 
 import dev.hotz.Wordle.Word;
 import dev.hotz.alg.MostFreq;
-import dev.hotz.alg.Naive;
+import dev.hotz.alg.Entropy;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -42,8 +42,8 @@ class WordleCLI implements Callable<Integer> {
     @CommandLine.Parameters(index = "0", arity = "0..1", description = "Number of games to run. If not present, plays all games.")
     private int maxGames = Integer.MAX_VALUE;
 
-    @Option(names = {"-a", "--algorithm"}, description = "naive, mostfreq, pnaive")
-    private String algorithm = "naive";
+    @Option(names = {"-a", "--algorithm"}, description = "entropy, mostfreq")
+    private String algorithm = "entropy";
 
     @Option(names = {"-p", "--progress"}, description = "Report avg. score during run")
     private boolean progress = false;
@@ -108,7 +108,7 @@ class WordleCLI implements Callable<Integer> {
 
     private static Guesser guesser(final String name) {
         return switch (name) {
-            case "naive" -> new Naive();
+            case "entropy" -> new Entropy();
             case "mostfreq" -> new MostFreq();
             default -> throw new IllegalArgumentException("Unknown guesser: " + name);
         };

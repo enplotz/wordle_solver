@@ -1,15 +1,35 @@
 # Jordle
 
-Java wordle solver implementation following along with the "roget" implementation stream (in Rust),
-which implements the 3blue1brown algorithm (sorta, I guess) and optimized it along the way.
+Java wordle solver implementation following along with the ["roget" implementation stream](https://www.youtube.com/watch?v=doFowk4xj7Q) (in Rust),
+which implements the 3blue1brown algorithm ([video1](https://www.youtube.com/watch?v=v68zYyaEmEA), 
+[video2](https://www.youtube.com/watch?v=fRed0Xmc2Wg&t=556s)). 
+The implementation was optimized a bit along the way.
 
-## Algorithms
+## Variants
 
-- `Naive.java`: first algorithm enumerating patterns and calculating entropy. avg score: 3.892023
-- `NaiveParallel.java`: simple parallel stream version of `Naive.java`. avg score: 3.891391
-- `MostFreq.java`: guess most-frequent remaining word. avg score: 4.277778
+Currently, there are two algorithmic variants of the wordle solver: 1) Entropy (3b1b) and 2) MostFreq.
 
-`Naive` and `NaiveParallel` probably differ slightly due to different tie-breaking.
+### Entropy
+
+Follows the 3blue1brown algorithm to choose guesses based on the expected gained information of each word.
+
+### Mostfreq
+
+Simple guesser that chooses the word with the highest frequency in the dictionary.
+
+## Scores & Performance
+
+The scores as computed against all answers with a max. of 6 guesses each (which is configurable in the source):
+
+- Entropy: avg score: 3.895457, solved: 98.18%
+- Mostfreq: avg score: 4.277778, solved: 96.67%
+
+```bash
+'mostfreq' ran 3.74 ± 0.08 times faster than 'entropy'
+```
+
+So, the Entropy strategy implementation is better but takes nearly 400% as long!
+
 
 ## Build & Run
 
@@ -24,23 +44,18 @@ Use [*hyperfine*](https://github.com/sharkdp/hyperfine) to compare different imp
 
 
 ```bash
-⌘  hyperfine -w 2 -m 2 -n mostfreq 'bin/jordle -a mostfreq 5' -n pnaive 'bin/jordle -a pnaive 5' -n naive 'bin/jordle -a naive 5'
-Benchmark 1: mostfreq
-  Time (mean ± σ):     256.9 ms ±   6.8 ms    [User: 303.1 ms, System: 91.8 ms]
-  Range (min … max):   241.4 ms … 266.5 ms    11 runs
+⌘  hyperfine -w 0 -n entropy 'bin/jordle -a entropy 64' -n mostfreq 'bin/jordle -a mostfreq 64'
+Benchmark 1: entropy
+  Time (mean ± σ):      1.656 s ±  0.021 s    [User: 1.609 s, System: 0.274 s]
+  Range (min … max):    1.628 s …  1.690 s    10 runs
 
-Benchmark 2: pnaive
-  Time (mean ± σ):      5.838 s ±  0.177 s    [User: 41.840 s, System: 0.600 s]
-  Range (min … max):    5.713 s …  5.963 s    2 runs
-
-Benchmark 3: naive
-  Time (mean ± σ):      7.711 s ±  0.154 s    [User: 7.609 s, System: 0.298 s]
-  Range (min … max):    7.602 s …  7.820 s    2 runs
+Benchmark 2: mostfreq
+  Time (mean ± σ):     443.1 ms ±   8.1 ms    [User: 615.0 ms, System: 107.3 ms]
+  Range (min … max):   436.5 ms … 463.6 ms    10 runs
 
 Summary
   'mostfreq' ran
-   22.73 ± 0.91 times faster than 'pnaive'
-   30.02 ± 0.99 times faster than 'naive'
+    3.74 ± 0.08 times faster than 'entropy'
 ```
 
 
