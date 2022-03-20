@@ -51,7 +51,9 @@ public class NaiveParallel implements Guesser {
                 double p_of_this_pattern = 1.0 * in_pattern_total / remaining_count;
                 return p_of_this_pattern * (Math.log(p_of_this_pattern) / Math.log(2));
             }).sum();
-            double goodness = -sum;
+            final double p_word = 1.0 * p.right() / remaining_count;
+            final double entropy = -sum;
+            final double goodness = p_word * entropy;
             return new Candidate(word, goodness);
         }).reduce((l, r) ->
             l.goodness > r.goodness ? l : r

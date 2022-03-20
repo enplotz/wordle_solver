@@ -54,7 +54,11 @@ public class Naive implements Guesser {
                 double p_of_this_pattern = 1.0 * in_pattern_total / remaining_count;
                 sum += p_of_this_pattern * (Math.log(p_of_this_pattern) / Math.log(2));
             }
-            double goodness = -sum;
+            // TODO filter patterns that cannot occur anymore with the guesses we used
+
+            final double p_word = 1.0 * p.right() / remaining_count;
+            final double entropy = -sum;
+            final double goodness = p_word * entropy;
             best = best.filter(currBest -> goodness < currBest.goodness).or(() -> Optional.of(new Candidate(word, goodness)));
         }
 

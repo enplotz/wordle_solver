@@ -20,33 +20,18 @@ public final class Wordle {
     private static final int MAX_GUESSES = 6;
 
     // TODO better dictionary handling, ideally this could be done in the generate-sources phase?
-    public static final Map<Word, Long> DICTIONARY;
+    public static final Map<Word, Long> DICTIONARY = loadDict();
 
-    // TODO The object overhead is a bit sad, ideally we would like to use something like a type alias for byte[] (value types when...)
-    //      that also handles HashMap comparing like e.g. for Strings (where it works), not like byte[] where Objects.equals(ba1, ba2) -> false...
-    static {
-        Map<Word, Long> d;
-        try {
-            d = loadDict();
-        } catch (IOException e) {
-            System.err.println("[ERROR] Could not load dictionary!");
-            d = null;
-        }
-        DICTIONARY = d;
-    }
-
-    private static Map<Word, Long> loadDict() throws IOException {
+    private static Map<Word, Long> loadDict() {
         try (final var in = new BufferedReader(new InputStreamReader(
                 Objects.requireNonNull(Wordle.class.getClassLoader().getResourceAsStream("dictionary.txt"))))) {
             return in.lines()
                     .filter(l -> !l.startsWith("#"))
                     .map(l -> l.split(" "))
                     .collect(Collectors.toMap(l -> new Word(l[0]), l -> Long.valueOf(l[1])));
+        } catch (IOException e) {
+            throw new RuntimeException("Could not load dictionary!");
         }
-    }
-
-    public Wordle() {
-
     }
 
     public OptionalInt play(final Word answer, final Guesser guesser) {
@@ -66,6 +51,11 @@ public final class Wordle {
         return OptionalInt.empty();
     }
 
+    /**
+     * A byte[]-wrapper class that works as expected in a HashMap and has very lightweight "charAt"-like comparison for the given String.
+     */
+    // TODO The object overhead is a bit sad, ideally we would like to use something like a type alias for byte[] (value types when...)
+    //      that also handles HashMap comparing like e.g. for Strings (where it works), not like byte[] where Objects.equals(ba1, ba2) -> false...
     public static class Word {
 
         private final byte[] value;
@@ -101,8 +91,11 @@ public final class Wordle {
     }
 
     public enum Correctness {
+        // Green
         CORRECT,
+        // Yellow
         MISPLACED,
+        // Red
         WRONG;
 
         private static final int LENGTH = 5;
@@ -155,7 +148,7 @@ public final class Wordle {
             Objects.requireNonNull(shorthand);
             final int len = shorthand.length();
             if (len != LENGTH) {
-                throw new IllegalArgumentException("Mask must have length 5, has: " + len);
+                throw new IllegalArgumentException(String.format("Mask must have length %d, has: %d%n", LENGTH, len));
             }
             return shorthand.chars().mapToObj(c -> switch (c) {
                 case 'C' -> CORRECT;
@@ -173,18 +166,6 @@ public final class Wordle {
                                             .flatMap((Correctness d) -> Arrays.stream(Correctness.values())
                                                     .map((Correctness e) -> new Correctness[] { a, b, c, d, e } )))))
                     .toArray(Correctness[][]::new);
-//            for (final Correctness a : Correctness.values()) {
-//                for (final Correctness b : Correctness.values()) {
-//                    for (final Correctness c : Correctness.values()) {
-//                        for (final Correctness d : Correctness.values()) {
-//                            for (final Correctness e : Correctness.values()) {
-//                                patterns.add(new Correctness[] { a, b, c, d, e });
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//            return patterns;
         }
     }
 }

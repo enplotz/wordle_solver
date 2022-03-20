@@ -5,9 +5,18 @@ which implements the 3blue1brown algorithm (sorta, I guess) and optimized it alo
 
 ## Algorithms
 
-- `Naive.java`: first algorithm enumerating patterns and calculating entropy. avg score: 1.960383
-- `NaiveParallel.java`: simple parallel stream version of `Naive.java`. avg score: 1.954961
-- `MostFreq.java`: guess most-frequent remaining word. avg score: 2.102621
+- `Naive.java`: first algorithm enumerating patterns and calculating entropy. avg score: 3.892023
+- `NaiveParallel.java`: simple parallel stream version of `Naive.java`. avg score: 3.891391
+- `MostFreq.java`: guess most-frequent remaining word. avg score: 4.277778
+
+`Naive` and `NaiveParallel` probably differ slightly due to different tie-breaking.
+
+## Build & Run
+
+```bash
+mvn --quiet clean package
+bin/jordle
+```
 
 ## Benchmarking
 
@@ -15,23 +24,23 @@ Use [*hyperfine*](https://github.com/sharkdp/hyperfine) to compare different imp
 
 
 ```bash
-⌘  hyperfine -n mostfreq 'bin/jordle -a mostfreq 1' -n pnaive 'bin/jordle -a pnaive 1' -n naive 'bin/jordle -a naive 1'
+⌘  hyperfine -w 2 -m 2 -n mostfreq 'bin/jordle -a mostfreq 5' -n pnaive 'bin/jordle -a pnaive 5' -n naive 'bin/jordle -a naive 5'
 Benchmark 1: mostfreq
-  Time (mean ± σ):     235.6 ms ±   1.7 ms    [User: 316.8 ms, System: 95.3 ms]
-  Range (min … max):   232.9 ms … 238.5 ms    12 runs
+  Time (mean ± σ):     256.9 ms ±   6.8 ms    [User: 303.1 ms, System: 91.8 ms]
+  Range (min … max):   241.4 ms … 266.5 ms    11 runs
 
 Benchmark 2: pnaive
-  Time (mean ± σ):     526.0 ms ±  13.1 ms    [User: 1524.4 ms, System: 675.6 ms]
-  Range (min … max):   509.9 ms … 553.5 ms    10 runs
+  Time (mean ± σ):      5.838 s ±  0.177 s    [User: 41.840 s, System: 0.600 s]
+  Range (min … max):    5.713 s …  5.963 s    2 runs
 
 Benchmark 3: naive
-  Time (mean ± σ):     806.1 ms ±  16.0 ms    [User: 724.2 ms, System: 236.1 ms]
-  Range (min … max):   790.8 ms … 836.7 ms    10 runs
+  Time (mean ± σ):      7.711 s ±  0.154 s    [User: 7.609 s, System: 0.298 s]
+  Range (min … max):    7.602 s …  7.820 s    2 runs
 
 Summary
   'mostfreq' ran
-    2.23 ± 0.06 times faster than 'pnaive'
-    3.42 ± 0.07 times faster than 'naive'
+   22.73 ± 0.91 times faster than 'pnaive'
+   30.02 ± 0.99 times faster than 'naive'
 ```
 
 

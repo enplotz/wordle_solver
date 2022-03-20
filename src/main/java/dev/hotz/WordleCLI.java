@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -27,61 +26,61 @@ import picocli.CommandLine.Option;
 class WordleCLI implements Callable<Integer> {
 
     // TODO also improve this, generate-sources?
-    private static final List<Word> GAMES;
+    private static final Word[] GAMES = loadGames();
 
-    static {
-        List<Word> d;
-        try {
-            d = loadGames();
-        } catch (IOException e) {
-            System.err.println("[ERROR] Could not load games!");
-            d = null;
-        }
-        GAMES = d;
-    }
-
-    private static List<Word> loadGames() throws IOException {
+    private static Word[] loadGames() {
         try (final var in = new BufferedReader(new InputStreamReader(
                 Objects.requireNonNull(Wordle.class.getClassLoader().getResourceAsStream("answers.txt"))))) {
             return in.lines()
                     .filter(l -> !l.startsWith("#"))
                     .map(Word::new)
-                    .collect(Collectors.toList());
+                    .toArray(Word[]::new);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not load games!");
         }
     }
 
     @CommandLine.Parameters(index = "0", arity = "0..1", description = "Number of games to run. If not present, plays all games.")
-    private Optional<Integer> numGames;
+    private int maxGames = Integer.MAX_VALUE;
 
     @Option(names = {"-a", "--algorithm"}, description = "naive, mostfreq, pnaive")
     private String algorithm = "naive";
 
+    @Option(names = {"-p", "--progress"}, description = "Report avg. score during run")
+    private boolean progress = false;
+
     @Override
     public Integer call() {
-        final int maxGames = numGames.orElse(Integer.MAX_VALUE);
         final var w = new Wordle();
         int score = 0;
-        int played = 0;
+        int solved = 0;
 
         final List<AtomicInteger> histogram = new ArrayList<>();
-        for (final var answer : GAMES) {
-            final var r = w.play(answer, guesser(algorithm));
+        final int max = Math.min(maxGames, GAMES.length);
+        for (int i = 0; i < max; i++) {
+            final var r = w.play(GAMES[i], guesser(algorithm));
             if (r.isPresent()) {
                 final int s = r.getAsInt();
-                played += 1;
                 score += s;
+                solved += 1;
                 if (s >= histogram.size()) {
-                    IntStream.range(0, s - histogram.size() + 1).mapToObj(i -> new AtomicInteger()).forEachOrdered(histogram::add);
+                    IntStream.range(0, s - histogram.size() + 1).mapToObj(_unused -> new AtomicInteger()).forEachOrdered(histogram::add);
                 }
                 histogram.get(s).incrementAndGet();
-                // System.err.printf("Guessed '%s' in %d%n", answer, s);
-                // } else {
-                //    System.err.printf("Failed to guess '%s'%n", answer);
-            }
-            if (++played > maxGames) {
-                break;
+                if (progress) {
+                    final int curr = i + 1;
+                    int percent = (int) (1.0 * curr * 70 / max);
+                    final String string = "\r"
+                            + String.format(Locale.US, "avg. score: %f ", 1.0 * score / solved)
+                            + " ".repeat(percent == 0 ? 2 : 2 - (int) (Math.log10(percent)))
+                            + " %d%% [".formatted(percent) + "=".repeat(percent) + '>' + " ".repeat(70 - percent) + ']'
+                            + " ".repeat((int) (Math.log10(max)) - (int) (Math.log10(curr)))
+                            + " %d/%d".formatted(curr, max);
+                    System.err.print(string);
+                }
             }
         }
+        System.err.println();
 
         final var sum = histogram.stream().mapToInt(AtomicInteger::intValue).sum();
         Util.zip(IntStream.range(0, Integer.MAX_VALUE).boxed(), histogram.stream().map(AtomicInteger::get), Util.Pair::new)
@@ -96,8 +95,7 @@ class WordleCLI implements Callable<Integer> {
                             LongStream.range(0, hash).mapToObj(v -> "#").collect(Collectors.joining()),
                             LongStream.range(0, white).mapToObj(v -> " ").collect(Collectors.joining()), c);
         });
-
-        System.err.printf(Locale.US, "avg score: %f%n", 1.0 * score / played);
+        System.err.printf(Locale.US, "avg score: %f%n", 1.0 * score / solved);
 
         return 0;
     }
