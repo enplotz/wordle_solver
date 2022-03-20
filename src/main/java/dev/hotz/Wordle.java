@@ -17,7 +17,11 @@ import java.util.stream.Collectors;
  */
 public final class Wordle {
 
+    // max allowed guesses until failed
     private static final int MAX_GUESSES = 6;
+
+    // 5 letters
+    public static final int LENGTH = 5;
 
     // TODO better dictionary handling, ideally this could be done in the generate-sources phase?
     public static final Map<Word, Long> DICTIONARY = loadDict();
@@ -98,8 +102,6 @@ public final class Wordle {
         // Red
         WRONG;
 
-        private static final int LENGTH = 5;
-
         public static final Correctness[][] ALL_PATTERNS = genPatterns();
 
         static public Correctness[] compute(final Word answer, final Word guess) {
@@ -136,6 +138,14 @@ public final class Wordle {
             }
 
             return correctness;
+        }
+
+        public static int idx(final Correctness[] mask) {
+            return Arrays.stream(mask).reduce(0, (acc, c) -> acc * 3 + switch (c) {
+                case CORRECT -> 0;
+                case MISPLACED -> 1;
+                case WRONG -> 2;
+            }, Integer::sum);
         }
 
         public static Correctness[] initMask() {

@@ -5,9 +5,6 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import dev.hotz.Guesser;
 import dev.hotz.Util;
@@ -21,7 +18,8 @@ import dev.hotz.Wordle.Word;
 public class Entropy implements Guesser {
 
     private final List<Util.Pair<Word, Long>> remaining;
-    private List<Correctness[]> patterns = null;
+
+    private static final int NUM_PATTERNS = (int) Math.pow(Correctness.values().length, Wordle.LENGTH);
 
     public Entropy() {
         this.remaining = new ArrayList<>(Wordle.DICTIONARY.entrySet()
@@ -45,35 +43,27 @@ public class Entropy implements Guesser {
         Optional<Candidate> best = Optional.empty();
 
         for (final var p : this.remaining) {
+            // hypothetical "old guess"
             final var word = p.left();
-
-            final AtomicLong sum = new AtomicLong(Double.doubleToLongBits(0d));
-            final Predicate<Correctness[]> checkPattern = pattern -> {
-                long in_pattern_total = 0;
-                for (final var e : this.remaining) {
-                    if (new Guess(word, pattern).matches(e.left(), corr)) {
-                        in_pattern_total += e.right();
-                    }
-                }
-                if (in_pattern_total == 0) {
-                    return false;
-                }
-                double p_of_this_pattern = 1.0 * in_pattern_total / remaining_count;
-                sum.set(Double.doubleToLongBits(Double.longBitsToDouble(sum.get())
-                        + (p_of_this_pattern * (Math.log(p_of_this_pattern) / Math.log(2)))));
-                return true;
-            };
-
-            if (this.patterns != null) {
-                this.patterns.removeIf(Predicate.not(checkPattern));
-            } else {
-                this.patterns = Arrays.stream(Correctness.ALL_PATTERNS)
-                        .filter(checkPattern)
-                        .collect(Collectors.toCollection(ArrayList::new));
+            // instead of iterating over each pattern and all next guesses
+            // and checking for compatibility with the old guess (matches)
+            // we observe that each combination of next guess and old guess
+            // produces exactly one correctness pattern.
+            // since we have 3^5 possible patterns, we can just index them.
+            final long[] in_pattern_total = new long[NUM_PATTERNS];
+            for (final var e : this.remaining) {
+                in_pattern_total[Correctness.idx(Correctness.compute(e.left(), word))] += e.right();
             }
 
+            final double sum = Arrays.stream(in_pattern_total)
+                    .filter(c -> c > 0)
+                    .mapToDouble(total -> {
+                        final double p_of_this_pattern = 1.0 * total / remaining_count;
+                        return p_of_this_pattern * (Math.log(p_of_this_pattern) / Math.log(2));
+                    }).sum();
+
             final double p_word = 1.0 * p.right() / remaining_count;
-            final double entropy = -(Double.longBitsToDouble(sum.get()));
+            final double entropy = -sum;
             final double goodness = p_word * entropy;
             best = best.filter(currBest -> goodness < currBest.goodness).or(() -> Optional.of(new Candidate(word, goodness)));
         }

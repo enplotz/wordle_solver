@@ -21,11 +21,11 @@ Simple guesser that chooses the word with the highest frequency in the dictionar
 
 The scores as computed against all answers with a max. of 6 guesses each (which is configurable in the source):
 
-- Entropy: avg score: 3.895457, solved: 98.18%
+- Entropy: avg score: 3.892023, solved: 98.27%
 - Mostfreq: avg score: 4.277778, solved: 96.67%
 
 ```bash
-'mostfreq' ran 3.74 ± 0.08 times faster than 'entropy'
+'mostfreq' ran 3.19 ± 0.10 times faster than 'entropy'
 ```
 
 So, the Entropy strategy implementation is better but takes nearly 400% as long!
@@ -46,16 +46,16 @@ Use [*hyperfine*](https://github.com/sharkdp/hyperfine) to compare different imp
 ```bash
 ⌘  hyperfine -w 0 -n entropy 'bin/jordle -a entropy 64' -n mostfreq 'bin/jordle -a mostfreq 64'
 Benchmark 1: entropy
-  Time (mean ± σ):      1.656 s ±  0.021 s    [User: 1.609 s, System: 0.274 s]
-  Range (min … max):    1.628 s …  1.690 s    10 runs
+  Time (mean ± σ):      1.408 s ±  0.044 s    [User: 1.439 s, System: 0.265 s]
+  Range (min … max):    1.357 s …  1.507 s    10 runs
 
 Benchmark 2: mostfreq
-  Time (mean ± σ):     443.1 ms ±   8.1 ms    [User: 615.0 ms, System: 107.3 ms]
-  Range (min … max):   436.5 ms … 463.6 ms    10 runs
+  Time (mean ± σ):     441.3 ms ±   4.1 ms    [User: 615.8 ms, System: 106.6 ms]
+  Range (min … max):   437.2 ms … 449.8 ms    10 runs
 
 Summary
   'mostfreq' ran
-    3.74 ± 0.08 times faster than 'entropy'
+    3.19 ± 0.10 times faster than 'entropy'
 ```
 
 
