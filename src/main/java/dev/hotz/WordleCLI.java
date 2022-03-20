@@ -16,7 +16,6 @@ import java.util.stream.LongStream;
 import dev.hotz.Wordle.Word;
 import dev.hotz.alg.MostFreq;
 import dev.hotz.alg.Naive;
-import dev.hotz.alg.NaiveParallel;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -110,7 +109,6 @@ class WordleCLI implements Callable<Integer> {
     private static Guesser guesser(final String name) {
         return switch (name) {
             case "naive" -> new Naive();
-            case "pnaive" -> new NaiveParallel();
             case "mostfreq" -> new MostFreq();
             default -> throw new IllegalArgumentException("Unknown guesser: " + name);
         };

@@ -65,7 +65,7 @@ public class Naive implements Guesser {
             };
 
             if (this.patterns != null) {
-                this.patterns.removeIf(pattern -> !checkPattern.test(pattern));
+                this.patterns.removeIf(Predicate.not(checkPattern));
             } else {
                 this.patterns = Arrays.stream(Correctness.ALL_PATTERNS)
                         .filter(checkPattern)
