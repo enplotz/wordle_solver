@@ -66,21 +66,15 @@ Summary
 - [ ] Parallelization of candidate evaluation (not games, which is rather trivial).
 
 
-## GraalVM native-image (Rosetta)
+## GraalVM native-image
+
+I tested the implementation under various different GraalVM versions/JDKs: the "old" JDK under Rosetta and a 
+pre-release for the M1 ARM architecture.
+Benchmark results comparing the ARM version compiled to an executable and "standard JAR" can be found in the [`plot.ipynb`](bench/plot.ipynb).
+
+### Rosetta (Intel-JDK)
 
 - Version: CE 22.0.0.2 (build 17.0.2+8-jvmci-22.0-b05)
-- Rosetta: yes, since darwin+aarch64 (aka. native M1) support has not yet been released 
-
-Using GraalVM native-image under Rosetta to compile to a "native" executable leads
-to the following observations.
-When comparing the 'mostfreq' algorithm on different platforms:
-
-- 'native' (Rosetta) is **9.08 ± 1.34 ✕** faster than running under Rosetta GraalVM JVM
-- 'native' (Rosetta) is **1.51 ± 0.03 ✕** faster than running under aarch64 JVM build 17.0.1+12-39
-
-```bash
-hyperfine --warmup 2 -n mostfreq 'bin/jordle -a mostfreq 1' -n mostfreq-native './jordle -a mostfreq 1'
-```
 
 Steps to reproduce:
 
@@ -97,9 +91,9 @@ Steps to reproduce:
    native-image -jar target/release/lib/jordle.jar --install-exit-handlers -H:IncludeResources='.*\.txt$' -H:+ReportUnsupportedElementsAtRuntime
    ```
 
-The native-image build takes around 1m 10s on the M1 MacBook Air.
+The Rosetta `native-image` build takes around 1m 10s on the M1 MacBook Air.
 
-```bash
+```fish
 ⌘  file jordle
 jordle: Mach-O 64-bit executable x86_64
 ⌘  du -h jordle
@@ -108,14 +102,68 @@ jordle: Mach-O 64-bit executable x86_64
 
 NB: "DARWIN does not support building static executable images."
 
-### [Flamegraphs](https://github.com/brendangregg/FlameGraph)
+### Darwin+aarch64 (M1 Native JDK)
+
+Steps to reproduce below.
+
+Note: I'm using `fish` instead of `bash`!
+Also, I'm setting it up as a custom asdf Java version.
+
+1. Download current preview and extract:
+   ```fish
+   $ pushd $HOME/.asdf/installs/java
+   $ curl -sLO https://github.com/graalvm/graalvm-ce-dev-builds/releases/download/22.1.0-dev-20220321_2332/graalvm-ce-java17-darwin-aarch64-dev.tar.gz
+   $ tar xzvf graalvm-ce-java17-darwin-aarch64-dev.tar.gz
+   ```
+2. Set up for asdf:
+   ```fish
+   $ cd graalvm-ce-java17-22.1.0-dev
+   $ for d in (ls Contents/Home); ln -s "Contents/Home/$d" $d; end
+   $ asdf reshim
+   ```
+3. Make sure it's listed and go back to the code directory:
+   ```fish
+   $ asdf list java
+   $ popd
+   ```
+4. Configure as local version and test: 
+   ```fish
+   $ asdf local java graalvm-ce-java17-22.1.0-dev
+   $  java -version
+   openjdk version "17.0.3" 2022-04-19
+   OpenJDK Runtime Environment GraalVM CE 22.1.0-dev (build 17.0.3+4-jvmci-22.1-b03)
+   OpenJDK 64-Bit Server VM GraalVM CE 22.1.0-dev (build 17.0.3+4-jvmci-22.1-b03, mixed mode, sharing)
+   ```
+5. Install native-image: 
+   ```fish
+   $ gu install native-image
+   $ asdf reshim
+   ```
+7. Package the project (`mvn clean package`) and compile to a native image:
+   ```fish
+   $ native-image -jar target/release/lib/jordle.jar --install-exit-handlers -H:IncludeResources='.*\.txt$' -H:+ReportUnsupportedElementsAtRuntime
+   ```
+
+The native `native-image` build takes around 21s on the M1 MacBook Air.
+
+```fish
+⌘  file jordle
+jordle: Mach-O 64-bit executable x86_64
+⌘  du -h jordle
+ 15M	jordle
+```
+
+NB: "DARWIN does not support building static executable images."
+
+
+## [Flamegraphs](https://github.com/brendangregg/FlameGraph)
 
 Using [async-profiler](https://github.com/jvm-profiling-tools/async-profiler/), we can generate flamegraphs pretty easily. 
 [Unfortunately](https://github.com/jvm-profiling-tools/async-profiler/#restrictionslimitations), on macOS it seems we're limited to user-space code only :(.
 Nonetheless, they provide interesting introspection into the running code.
 
 For example, to evaluate a currently running `jordle` (from the `bin` script, which sets some necessary JVM args), execute:
-```bash
+```fish
 ../async-profiler-2.7-macos/profiler.sh -d 10 -t -f perf-out.html (jps | awk -F ' ' '/jordle/ { print $1}')
 ```
 
